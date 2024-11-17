@@ -28,7 +28,6 @@ def importar_datos(nombre_archivo):
         print(f"Error inesperado: {e}")
 
 def exportar_datos(nombre_archivo):
-    """Exportar datos al archivo YAML."""
     global data
     try:
         with open(nombre_archivo, 'w') as archivo:
@@ -38,7 +37,6 @@ def exportar_datos(nombre_archivo):
         print(f"Error al exportar datos: {e}")
 
 def listar_alumnos():
-    """Listar alumnos existentes, con filtros opcionales."""
     if not data["alumnos"]:
         print("No hay alumnos disponibles para listar.")
         return
@@ -57,7 +55,6 @@ def listar_alumnos():
         print(f"- {alumno['nombre']} (Código: {alumno['codigo']}, MAC: {alumno['mac']})")
 
 def mostrar_detalle_alumno():
-    """Mostrar detalles de un alumno específico."""
     if not data["alumnos"]:
         print("No hay alumnos disponibles para mostrar.")
         return
@@ -74,7 +71,6 @@ def mostrar_detalle_alumno():
         print(f"No se encontró un alumno con el código {codigo_alumno}.")
 
 def listar_cursos():
-    """Listar los cursos existentes y su estado."""
     if not data["cursos"]:
         print("No hay cursos disponibles para listar.")
         return
@@ -84,7 +80,6 @@ def listar_cursos():
         print(f"- {curso['nombre']} (Código: {curso['codigo']}, Estado: {curso['estado']})")
 
 def mostrar_detalle_curso():
-    """Mostrar detalles de un curso específico."""
     if not data["cursos"]:
         print("No hay cursos disponibles para mostrar.")
         return
@@ -157,3 +152,5 @@ def menu_principal():
 
 if __name__ == "__main__":
     menu_principal()
+
+#haaaaaaaaa
