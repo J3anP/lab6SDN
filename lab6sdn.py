@@ -80,6 +80,29 @@ def mostrar_detalle_servidor(nombre_servidor):
     print(f"No se encontró un servidor con el nombre '{nombre_servidor}'.")
 
 
+def agregar_alumno(archivo_yaml):
+    nombre = input("Ingrese el nombre del alumno: ")
+    codigo = input("Ingrese el código del alumno: ")
+    mac = input("Ingrese la dirección MAC del alumno: ")
+    
+    nuevo_alumno = {
+        'nombre': nombre,
+        'codigo': codigo,
+        'mac': mac
+    }
+
+
+    data['alumnos'].append(nuevo_alumno)
+    
+    try:
+        with open(archivo_yaml, 'w') as archivo:
+            yaml.dump(data, archivo, default_flow_style=False, allow_unicode=True)
+        print("Alumno agregado exitosamente.")
+    except Exception as e:
+        print(f"Error al guardar los datos: {e}")
+    
+
+
 
 def mostrar_detalle_alumno():
     if not data["alumnos"]:
@@ -164,12 +187,18 @@ def menu_principal():
             print("\nOpciones de Alumnos:")
             print("1) Listar alumnos")
             print("2) Mostrar detalle de un alumno")
+            print("3) Agregar alumno")
             sub_opcion = input("Seleccione una opción: ")
             
             if sub_opcion == '1':
                 listar_alumnos()
             elif sub_opcion == '2':
                 mostrar_detalle_alumno()
+
+            elif sub_opcion =='3':
+                 
+                agregar_alumno('database.yaml')
+
             else:
                 print("Opción inválida.")
 
