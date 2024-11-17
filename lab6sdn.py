@@ -10,7 +10,7 @@ from prettytable import PrettyTable
 
 controller_ip = '10.20.12.4'
 
-servidor_mac = 'fa:16:3e:94:7e:5b'
+servidor_mac = 'fa:16:3e:94:7e:5b' # Aquí va la mac de la vm 3
 
 data = {
     "alumnos": [],
@@ -18,9 +18,9 @@ data = {
     "servidores": []
 }
 
-connections = {}
-
 handlers = []
+
+connections = {}
 
 # -------------------------------------------------
 #                  BASE DE DATOS:
@@ -345,7 +345,7 @@ def crear_conexion():
         return
 
     #dst_dpid, dst_port = get_attachement_points(servidor.get("ip"),False)
-    dst_dpid, dst_port = get_attachement_points('fa:16:3e:94:7e:5b', True)
+    dst_dpid, dst_port = get_attachement_points(servidor_mac, True)
     if not dst_dpid or not dst_port:
         print("No se pudo obtener el punto de conexión del servidor.")
         return
@@ -388,6 +388,7 @@ def crear_conexion():
             in_port=in_port,
             out_port=out_port,
             handler=handler,
+            tipo="",
             flow_number=len(connections[handler]) + 1)
 
         connections[handler+"-ARP"].append(flow_arp)
@@ -411,6 +412,7 @@ def crear_conexion():
             in_port=out_port,
             out_port=in_port,
             handler=handler,
+            tipo="reverse-",
             flow_number=len(connections[handler]))
 
         connections[handler + "-ARP"].append(flow_arp_reverse)
@@ -436,7 +438,7 @@ def crear_flow(switch_dpid, in_port, out_port, mac_src, ip_dst, protocol, port_d
         "actions": f"output={out_port}"
     }
     enviar_flow_al_controller(flow)
-    #print(flow)
+    print(flow)
     return flow
 
 def crear_flow_inverso(switch_dpid, in_port, out_port, mac_dst, ip_src, protocol, port_src, handler, flow_number):
@@ -456,12 +458,12 @@ def crear_flow_inverso(switch_dpid, in_port, out_port, mac_dst, ip_src, protocol
         "actions": f"output={out_port}"
     }
     enviar_flow_al_controller(flow)
-    #print(flow)
+    print(flow)
     return flow
 
 
-def crear_arp_flow(switch_dpid, in_port, out_port, handler, flow_number):
-    flow_name = f"{handler}-arp-{flow_number}"
+def crear_arp_flow(switch_dpid, in_port, out_port, handler, flow_number,tipo):
+    flow_name = f"{handler}-arp-{tipo}{flow_number}"
     flow = {
         "switch": switch_dpid,
         "name": flow_name,
@@ -473,6 +475,7 @@ def crear_arp_flow(switch_dpid, in_port, out_port, handler, flow_number):
         "actions": f"output={out_port}"
     }
     enviar_flow_al_controller(flow)
+    print(flow)
     return flow
 
 
