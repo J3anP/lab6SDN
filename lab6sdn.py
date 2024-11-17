@@ -226,6 +226,21 @@ def agregar_alumno_a_curso(archivo_yaml):
     except Exception as e:
         print(f"Error al guardar los datos: {e}")
 
+def buscar_curso_por_servicio(nombre_servicio):
+    global data
+    aux = True
+    data.get("cursos")
+
+    for curso in data.get("cursos", []):
+        for servidor in curso.get("servidores", []):
+            if nombre_servicio in servidor.get("servicios_permitidos", []):
+                if aux:
+                    print(f"Cursos encontrados con el servicio '{nombre_servicio}':")
+                    aux = False
+                print(f"- {curso['nombre']} (Código: {curso['codigo']}, Estado: {curso['estado']})")
+                return
+    print("No se encontró algún curso que permita el servicio ingresado.")
+    return
 
 # -------------------------------------------------
 #                   CONEXIONES:
@@ -246,6 +261,7 @@ def get_attachement_points(dato,flag):
         else:
             data = data[0]
             switch_DPID,port = data['attachmentPoint'][0]['switchDPID'],data['attachmentPoint'][0]['port']
+            #print(switch_DPID,port)
             return switch_DPID,port
     else:
         print(f'Ocurrió un error con el request!')
@@ -328,7 +344,8 @@ def crear_conexion():
         print("No se pudo obtener el punto de conexión del alumno.")
         return
 
-    dst_dpid, dst_port = get_attachement_points(servidor.get("ip"),False)
+    #dst_dpid, dst_port = get_attachement_points(servidor.get("ip"),False)
+    dst_dpid, dst_port = get_attachement_points('fa:16:3e:94:7e:5b', True)
     if not dst_dpid or not dst_port:
         print("No se pudo obtener el punto de conexión del servidor.")
         return
@@ -366,6 +383,15 @@ def crear_conexion():
         )
         connections[handler].append(flow)
 
+        flow_arp = crear_arp_flow(
+            switch_dpid=switch_dpid,
+            in_port=in_port,
+            out_port=out_port,
+            handler=handler,
+            flow_number=len(connections[handler]) + 1)
+
+        connections[handler+"-ARP"].append(flow_arp)
+
         # Servidor a host:
         flow_reverse = crear_flow_inverso(
             switch_dpid=switch_dpid,
@@ -380,11 +406,15 @@ def crear_conexion():
         )
         connections[handler].append(flow_reverse)
 
+        flow_arp_reverse = crear_arp_flow(
+            switch_dpid=switch_dpid,
+            in_port=out_port,
+            out_port=in_port,
+            handler=handler,
+            flow_number=len(connections[handler]))
 
-    # Configurar flujos ARP
-    for switch_dpid, port in {ruta[i][0]: ruta[i][1] for i in range(len(ruta))}.items():
-        flow = crear_arp_flow(switch_dpid, port, handler, len(connections[handler]) + 1)
-        connections[handler+"-ARP"].append(flow)
+        connections[handler + "-ARP"].append(flow_arp_reverse)
+
 
     print(f"Conexión creada con handler: {handler}")
 
@@ -394,17 +424,19 @@ def crear_flow(switch_dpid, in_port, out_port, mac_src, ip_dst, protocol, port_d
     flow = {
         "switch": switch_dpid,
         "name": flow_name,
-        "priority": "32768",
+        "priority": "5",
         "eth_type": "0x0800",
         "eth_src": mac_src,
         "ipv4_dst": ip_dst,
         "ip_proto": 6 if protocol == "TCP" else 17,
         "tp_dst": port_dst,
         "in_port": in_port,
+        "active": "true",
+        "cookie": "0",
         "actions": f"output={out_port}"
     }
     enviar_flow_al_controller(flow)
-    print(flow)
+    #print(flow)
     return flow
 
 def crear_flow_inverso(switch_dpid, in_port, out_port, mac_dst, ip_src, protocol, port_src, handler, flow_number):
@@ -412,44 +444,50 @@ def crear_flow_inverso(switch_dpid, in_port, out_port, mac_dst, ip_src, protocol
     flow = {
         "switch": switch_dpid,
         "name": flow_name,
-        "priority": "32768",
+        "priority": "5",
         "eth_type": "0x0800",
         "eth_dst": mac_dst,
         "ipv4_src": ip_src,
         "ip_proto": 6 if protocol == "TCP" else 17,
         "tp_src": port_src,
         "in_port": in_port,
+        "active": "true",
+        "cookie": "0",
         "actions": f"output={out_port}"
     }
     enviar_flow_al_controller(flow)
-    print(flow)
+    #print(flow)
     return flow
 
 
-def crear_arp_flow(switch_dpid, port, handler, flow_number):
+def crear_arp_flow(switch_dpid, in_port, out_port, handler, flow_number):
     flow_name = f"{handler}-arp-{flow_number}"
     flow = {
         "switch": switch_dpid,
         "name": flow_name,
-        "priority": "50",
+        "priority": "5",
         "eth_type": "0x0806",
-        "in_port": port,
-        "actions": "output=flood"
+        "in_port": in_port,
+        "active": "true",
+        "cookie": "0",
+        "actions": f"output={out_port}"
     }
     enviar_flow_al_controller(flow)
     return flow
 
 
 def enviar_flow_al_controller(flow):
-    url = f"http://{controller_ip}:8080/wm/staticentrypusher/json"
+    url = f"http://{controller_ip}:8080/wm/staticflowpusher/json"
     response = requests.post(url, json=flow)
     if response.status_code == 200:
-        print(f"Flow {flow['name']} enviado correctamente al controlador.")
+        response
+        #print(f"Flow {flow['name']} enviado correctamente al controlador.")
     else:
         print(f"Error al enviar el flow {flow['name']} al controlador.")
+        print(response.content)
 
 
-def eliminar_connection(handler):
+def eliminar_conexion(handler):
     global connections
 
     if handler not in connections:
@@ -472,10 +510,11 @@ def eliminar_connection(handler):
 
 
 def eliminar_flow(flow):
-    url = f"http://{controller_ip}:8080/wm/staticentrypusher/json"
+    url = f"http://{controller_ip}:8080/wm/staticflowpusher/json"
     response = requests.delete(url, json={"name": flow["name"]})
     if response.status_code == 200:
-        print(f"Flow {flow['name']} eliminado correctamente del controlador.")
+        response
+        #print(f"Flow {flow['name']} eliminado correctamente del controlador.")
     else:
         print(f"Error al eliminar el flow {flow['name']} del controlador.")
 
@@ -525,6 +564,7 @@ def menu_principal():
             print("1) Listar cursos")
             print("2) Mostrar detalle de un curso")
             print("3) Agregar alumno a un curso")
+            print("4) Buscar curso por servicio")
             sub_opcion = input("Seleccione una opción: ").strip()
             print("\n")
             if sub_opcion == '1':
@@ -533,6 +573,9 @@ def menu_principal():
                 mostrar_detalle_curso()
             elif sub_opcion == '3':
                 agregar_alumno_a_curso('database.yaml')
+            elif sub_opcion == '4':
+                sub_opcion4 = input("Ingrese el nombre del servicio: ")
+                buscar_curso_por_servicio(sub_opcion4)
             else:
                 print("Opción inválida.")
         elif opcion == '4':
@@ -546,11 +589,8 @@ def menu_principal():
                 listar_alumnos()
             elif sub_opcion == '2':
                 mostrar_detalle_alumno()
-
             elif sub_opcion =='3':
-                 
                 agregar_alumno('database.yaml')
-
             else:
                 print("Opción inválida.")
 
@@ -582,7 +622,7 @@ def menu_principal():
                 listar_conexiones()
             elif sub_opcion == '3':
                 sub_opcion3 = input("Ingrese el handler de la conexión que desee eliminar: ").strip()
-                eliminar_connection(sub_opcion3)
+                eliminar_conexion(sub_opcion3)
             else:
                 print("Opción inválida.")
 
