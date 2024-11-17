@@ -12,7 +12,6 @@ def importar_datos(nombre_archivo):
     try:
         with open(nombre_archivo, 'r') as archivo:
             datos_importados = yaml.safe_load(archivo)
-            
             if "alumnos" in datos_importados:
                 data["alumnos"] = datos_importados["alumnos"]
             if "cursos" in datos_importados:
@@ -53,6 +52,34 @@ def listar_alumnos():
     print("\nAlumnos existentes:")
     for alumno in alumnos_filtrados:
         print(f"- {alumno['nombre']} (Código: {alumno['codigo']}, MAC: {alumno['mac']})")
+
+
+def listar_servidores():
+    global data
+    servidores = data.get("servidores", [])
+    if servidores:
+        print("Servidores:")
+        for servidor in servidores:
+            nombre = servidor.get("nombre", "Nombre")
+            ip = servidor.get("ip", "IP")
+            print(f"- Nombre: {nombre}, IP: {ip}")
+    else:
+        print("No hay servidores registrados.")
+
+
+
+def mostrar_detalle_servidor(nombre_servidor):
+    global data
+    servidores = data.get("servidores", [])
+    for servidor in servidores:
+        if servidor.get("nombre") == nombre_servidor:
+            print("\nDetalles del Servidor:")
+            for clave, valor in servidor.items():
+                print(f"{clave.capitalize()}: {valor}")
+            return
+    print(f"No se encontró un servidor con el nombre '{nombre_servidor}'.")
+
+
 
 def mostrar_detalle_alumno():
     if not data["alumnos"]:
@@ -110,6 +137,7 @@ def menu_principal():
         print("2) Exportar")
         print("3) Cursos")
         print("4) Alumnos")
+        print("5) Servidores")
         print("8) Salir")
         
         opcion = input("Seleccione una opción: ")
@@ -144,13 +172,34 @@ def menu_principal():
                 mostrar_detalle_alumno()
             else:
                 print("Opción inválida.")
+
+        elif opcion == '5':
+            print("\nOpciones de Servidores:")
+            print("1) Listar Servidores")
+            print("2) Mostrar detalle de servidores")
+            sub_opcion = input("Seleccione una opción: ")
+
+            if sub_opcion == '1':
+                listar_servidores()
+            elif sub_opcion == '2':
+                sub_opcion2 = input("Ingrese el servidor para ver el detalle: ")
+                mostrar_detalle_servidor(sub_opcion2)
+
+            else:
+                print("Opción inválida.")
+
         elif opcion == '8':
             print("Cerrando programa en 3 2 1 ...")
             break
         else:
             print("Ingrese una opción válida.")
 
-if __name__ == "__main__":
+
+def main():
+    importar_datos('database.yaml') 
     menu_principal()
 
-#haaaaaaaaa
+
+if __name__ == "__main__":
+    main()
+
