@@ -8,13 +8,14 @@ alumnos:
 - codigo: 20080621
   mac: 00:44:11:3F:22:C3:77
   nombre: Luisa Marvel
-- codigo: '19003011'
-  mac: fa:16:3e:e9:a0:b6
+- codigo: 19003011
+  mac: fa:16:3e:a9:3a:0d
   nombre: Oscar Wilde
 cursos:
 - alumnos:
   - 20012482
   - 20041321
+  - 19003011
   codigo: TEL354
   estado: DICTANDO
   nombre: Redes Definidas por Software
